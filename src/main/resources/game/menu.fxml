@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="20.0"
+      style="-fx-background-color: #1a1a1a; -fx-padding: 50;"
+      xmlns="http://javafx.com/javafx/19"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="game.MenuController">
+
+    <Label text="LODE RUNNER" textFill="#00ff00">
+        <font> <Font name="Impact" size="48.0" /> </font>
+    </Label>
+
+    <Label text="LOGIN SYSTEM" textFill="#aaaaaa" />
+
+    <TextField fx:id="nameField" maxWidth="300.0" promptText="Zadejte jméno"
+               style="-fx-background-color: #333333; -fx-text-fill: white; -fx-border-color: #00ff00;" />
+
+    <Button fx:id="startButton" onAction="#onStartGame" text="START GAME"
+            style="-fx-background-color: #008800; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30;" />
+
+    <Label fx:id="statusLabel" text="" textFill="#ff5555" />
+</VBox>

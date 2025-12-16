@@ -7,30 +7,19 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.net.URL;
 
 public class LodeRunnerDemo extends Application {
 
     @Override
     public void start(Stage primaryStage) throws IOException {
+        DataManager.loadSettings();
 
-        URL fxmlLocation = getClass().getResource("/game/game.fxml");
-        if (fxmlLocation == null) {
-            System.err.println("Nelze nalézt game.fxml. Ujistěte se, že je ve složce resources/game.");
-            return;
-        }
-
-        FXMLLoader loader = new FXMLLoader(fxmlLocation);
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/menu.fxml"));
         Parent root = loader.load();
 
-        GameController controller = loader.getController();
+        Scene scene = new Scene(root, 600, 400);
 
-        Scene scene = new Scene(root, GameController.GAME_WIDTH, GameController.GAME_HEIGHT);
-
-        scene.setOnKeyPressed(event -> controller.handleKeyPressed(event.getCode()));
-        scene.setOnKeyReleased(event -> controller.handleKeyReleased(event.getCode()));
-
-        primaryStage.setTitle("Lode Runner Demo - FXML verze");
+        primaryStage.setTitle("Lode Runner - Menu");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
