@@ -1,56 +1,49 @@
-// Soubor: src/main/java/game/Entity.java
 package game;
 
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-/**
- * Abstraktní třída pro všechny herní objekty.
- * Poskytuje základní funkcionalitu jako pozice a vykreslení.
- */
-public abstract class Entity {
+
+public abstract class Entity implements IDrawable, IUpdatable {
     protected double x;
     protected double y;
     protected final double width;
     protected final double height;
-    protected Rectangle view; // Grafický prvek
+    protected Rectangle view;
+    protected final GameController gameContext;
 
-    public Entity(double x, double y, double width, double height, Color color) {
+    public Entity(double x, double y, double width, double height, Color color, GameController context) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.gameContext = context;
 
-        // Inicializace grafického prvku
         this.view = new Rectangle(x, y, width, height);
         this.view.setFill(color);
     }
 
-    /**
-     * Vykreslí objekt přidáním jeho grafické reprezentace do kontejneru.
-     * @param root Pane, do kterého se objekt přidá
-     */
+    @Override
     public void draw(Pane root) {
         if (!root.getChildren().contains(view)) {
             root.getChildren().add(view);
         }
     }
 
-    /**
-     * Abstraktní metoda pro aktualizaci stavu/pohyb, bude implementována v potomcích.
-     */
+    @Override
     public abstract void update(long now);
 
-    /**
-     * Aktualizuje pozici grafického prvku po změně x/y.
-     */
     protected void updateViewPosition() {
         view.setX(x);
         view.setY(y);
     }
 
-    // Základní Gettery a Settery
+    protected Tile getTileAt(double pixelX, double pixelY) {
+        if (gameContext == null) return null;
+        return gameContext.getTileAtPixel(pixelX, pixelY);
+    }
+
     public double getX() { return x; }
     public double getY() { return y; }
     public double getWidth() { return width; }

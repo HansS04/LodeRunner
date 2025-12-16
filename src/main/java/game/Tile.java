@@ -3,50 +3,45 @@ package game;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
 
-/**
- * Třída Tile reprezentuje statický blok na mapě.
- */
-public class Tile {
-    public static final int TILE_SIZE = 32; // Velikost bloku v pixelech
+
+public class Tile implements IDrawable {
+    public final int tileSize;
 
     private final int gridX;
     private final int gridY;
-    private TileType type; // Používáme náš neprimitivní enum TileType
-    private final Rectangle view; // Grafický prvek
+    private TileType type;
+    private final Rectangle view;
 
-    public Tile(int gridX, int gridY, TileType type) {
+    public Tile(int gridX, int gridY, TileType type, int tileSize) {
         this.gridX = gridX;
         this.gridY = gridY;
         this.type = type;
+        this.tileSize = tileSize;
 
-        // Vypočítáme pixelové souřadnice z mřížky
-        double screenX = gridX * TILE_SIZE;
-        double screenY = gridY * TILE_SIZE;
+        double screenX = gridX * tileSize;
+        double screenY = gridY * tileSize;
 
-        // Inicializace grafického prvku
-        this.view = new Rectangle(screenX, screenY, TILE_SIZE, TILE_SIZE);
+        this.view = new Rectangle(screenX, screenY, tileSize, tileSize);
         this.view.setFill(type.getColor());
     }
 
-    /**
-     * Vykreslí blok přidáním jeho grafické reprezentace do kontejneru.
-     */
+    @Override
     public void draw(Pane root) {
         if (type != TileType.AIR && !root.getChildren().contains(view)) {
             root.getChildren().add(view);
         }
     }
 
-    // --- Gettery pro přístup k datům ---
     public int getGridX() { return gridX; }
     public int getGridY() { return gridY; }
     public TileType getType() { return type; }
-    public boolean isSolid() { return type.isSolid(); } // Volání metody z enumu
+    public boolean isSolid() { return type.isSolid(); }
+    public boolean isUsable() { return type.isUsable(); }
+    public boolean isLadder() { return type.isLadder(); }
+    public boolean isGold() { return type.isGold(); }
 
-    // Potřebná metoda pro změnu stavu bloku (např. když je vykopán)
     public void setType(TileType newType) {
         this.type = newType;
         this.view.setFill(newType.getColor());
-        // Zde by měla být logika pro odstranění z rootu, pokud se změní na AIR
     }
 }
