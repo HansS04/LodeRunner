@@ -13,6 +13,10 @@ public abstract class Entity implements IDrawable, IUpdatable, Serializable {
     protected double dx, dy;
     protected double moveSpeed;
 
+    // Menší hitbox = méně zasekávání.
+    // Pokud je TILE_SIZE 32, postava má vizuálně 32, ale fyzicky koliduje jen vnitřním čtvercem.
+    protected static final double COLLISION_MARGIN = 4.0;
+
     protected transient Rectangle view;
     protected transient GameController gameContext;
 
@@ -49,117 +53,133 @@ public abstract class Entity implements IDrawable, IUpdatable, Serializable {
         }
     }
 
-    // --- HLAVNÍ OPRAVA FYZIKY ---
-    protected void applyPhysics() {
+    /**
+     * PROFI POHYBOVÁ LOGIKA (Axis-Separated + Snapping)
+     */
+    protected void updatePhysics() {
+        // Střed postavy pro detekci "kde jsem"
         double centerX = x + width / 2;
         double centerY = y + height / 2;
 
-        // Získáme dlaždici ve středu postavy
         Tile centerTile = getTileAt(centerX, centerY);
 
-        // Získáme dlaždici pod nohama (pro kontrolu, zda stojíme na vrchu žebříku)
-        Tile feetTile = getTileAt(centerX, y + height + 2);
-
+        // Detekce stavů
         boolean onLadder = (centerTile != null && centerTile.isLadder());
         boolean onRope = (centerTile != null && centerTile.getType() == TileType.ROPE);
 
-        // Speciální případ: Stojíme NA žebříku (ne v něm), ale chceme po něm slézt dolů?
-        // To řešíme kontrolou, jestli pod námi je žebřík a my padáme/jdeme dolů.
-        boolean aboveLadder = (feetTile != null && feetTile.isLadder());
+        // --- OSA X (Horizontální) ---
+        if (dx != 0) {
+            // Povolit pohyb do stran JENOM když:
+            // 1. Nejsme na žebříku
+            // 2. NEBO jsme na laně
+            // 3. NEBO jsme na žebříku, ale jsme přesně v úrovni patra (alignedY)
+            boolean alignedY = Math.abs(y % GameController.TILE_SIZE) < 4.0;
 
-        // 1. Logika ŽEBŘÍKU a LANA (Vypnutí gravitace)
-        if (onLadder || onRope) {
-            // Pokud jsme na žebříku/laně, dy určuje přímo pohyb (žádné zrychlení gravitací)
-
-            // a) Zarovnání na střed žebříku (osa X) pokud lezeme nahoru/dolů
-            if (onLadder && dy != 0) {
-                double ladderCenterX = centerTile.getGridX() * GameController.TILE_SIZE;
-                // Jemné přitahování ke středu (aby to neškubalo)
-                if (Math.abs(x - ladderCenterX) > 2) {
-                    if (x < ladderCenterX) x += 2;
-                    else x -= 2;
-                } else {
-                    x = ladderCenterX; // Zaklapnutí
-                }
-            }
-
-            // b) Aplikace pohybu Y
-            if (dy != 0) {
-                double nextY = y + dy;
-                if (!checkCollision(x, nextY)) {
-                    y = nextY;
-                } else {
-                    // Narazili jsme do stropu nebo podlahy při lezení
-                    // Zarovnáme na mřížku
-                    if (dy > 0) y = (Math.floor(y / GameController.TILE_SIZE) + 1) * GameController.TILE_SIZE - height; // Podlaha
-                    else y = Math.ceil(y / GameController.TILE_SIZE) * GameController.TILE_SIZE; // Strop
-                }
-            }
-
-            // c) Aplikace pohybu X (jen pokud jsme zarovnaní s řádkem!)
-            // Toto opravuje "nemožnost slézt". Musíme být v úrovni podlahy, abychom mohli do strany.
-            boolean isAlignedY = Math.abs(y % GameController.TILE_SIZE) < 4; // Tolerance 4 pixely
-
-            if (dx != 0 && (isAlignedY || onRope)) { // Na laně se hýbeme vždy, na žebříku jen v patře
+            if (!onLadder || onRope || alignedY) {
                 double nextX = x + dx;
                 if (!checkCollision(nextX, y)) {
                     x = nextX;
-                    // Pokud jdeme z žebříku do strany, srovnáme Y přesně na mřížku
-                    if (onLadder) {
+
+                    // Pokud odcházíme z žebříku do strany, srovnáme Y na mřížku
+                    if (onLadder && alignedY) {
                         y = Math.round(y / GameController.TILE_SIZE) * GameController.TILE_SIZE;
                     }
+                } else {
+                    // Kolize se zdí - srovnání na pixel
+                    // (Volitelné, ale pomáhá to plynulosti)
+                    dx = 0;
                 }
             }
+        }
 
-            // Na laně nepadáme
+        // --- OSA Y (Vertikální) ---
+
+        // 1. SNAP NA ŽEBŘÍK (X-axis)
+        // Pokud jsme na žebříku, NIKDY nedovolíme plavat v prostoru. Musíme být uprostřed.
+        if (onLadder) {
+            double ladderCenterX = centerTile.getGridX() * GameController.TILE_SIZE;
+            double diff = x - ladderCenterX;
+
+            // Agresivní snapping
+            if (Math.abs(diff) > 1.0) {
+                if (diff > 0) x -= 1.0; else x += 1.0;
+            } else {
+                x = ladderCenterX;
+            }
+        }
+
+        // 2. GRAVITACE vs LEZENÍ
+        boolean gravityActive = true;
+
+        if (onLadder || onRope) {
+            gravityActive = false; // Na žebříku/laně gravitace neexistuje
+
+            // Na laně držíme Y
             if (onRope && !onLadder) {
                 double ropeY = centerTile.getGridY() * GameController.TILE_SIZE;
-                if (Math.abs(y - ropeY) < 5) y = ropeY; // Drž se lana
+                if (Math.abs(y - ropeY) < 4.0) y = ropeY;
+                dy = 0;
             }
+        }
 
+        if (gravityActive) {
+            dy += 0.5; // Gravitace
+            if (dy > 8) dy = 8; // Max pád
         } else {
-            // 2. Logika PÁDU (Gravitace) - Jsme ve vzduchu
+            // Pokud jsme na žebříku a nic nemačkáme, zastavíme
+            // (dx/dy se nastavuje v Player/Enemy logic)
+        }
 
-            // Pohyb X ve vzduchu
-            if (dx != 0) {
-                double nextX = x + dx;
-                if (!checkCollision(nextX, y)) {
-                    x = nextX;
-                }
-            }
-
-            // Gravitace
-            dy += 0.5;
-            if (dy > 8) dy = 8;
+        // 3. APLIKACE POHYBU Y
+        if (dy != 0) {
             double nextY = y + dy;
 
-            if (checkCollision(x, nextY)) {
+            // Pokud padáme dolů (dy > 0) a pod námi je žebřík, je to průchozí!
+            // Ale musíme zkontrolovat, zda nenarážíme do cihly.
+
+            if (!checkCollision(x, nextY)) {
+                y = nextY;
+            } else {
+                // Kolize Y
                 if (dy > 0) {
-                    // Dopad na zem -> Zarovnání
-                    int tileY = (int) ((nextY + height) / GameController.TILE_SIZE);
-                    y = tileY * GameController.TILE_SIZE - height;
+                    // Dopad na zem -> Srovnání na mřížku
+                    // (Vypočítáme přesně pozici nad dlaždicí)
+                    y = (Math.floor((nextY + height) / GameController.TILE_SIZE)) * GameController.TILE_SIZE - height;
+                } else {
+                    // Náraz hlavou do stropu
+                    y = (Math.floor(nextY / GameController.TILE_SIZE) + 1) * GameController.TILE_SIZE;
                 }
                 dy = 0;
-            } else {
-                y = nextY;
             }
         }
 
         updateViewPosition();
     }
 
-    protected boolean checkCollision(double newX, double newY) {
-        // Zmenšený hitbox (margin), aby se postava nezasekávala o stěny při lezení
-        double margin = 6.0;
-        return isSolid(newX + margin, newY + margin) ||
-                isSolid(newX + width - margin, newY + margin) ||
-                isSolid(newX + margin, newY + height - margin) ||
-                isSolid(newX + width - margin, newY + height - margin);
+    /**
+     * Vylepšená kolize. Používá "Margin", takže hitbox je menší než sprite.
+     * To dovoluje postavě projít dírou o velikosti 32px i když má grafika 32px.
+     */
+    protected boolean checkCollision(double checkX, double checkY) {
+        double left = checkX + COLLISION_MARGIN;
+        double right = checkX + width - COLLISION_MARGIN;
+        double top = checkY + COLLISION_MARGIN;
+        double bottom = checkY + height - COLLISION_MARGIN;
+
+        // Kontrola 4 rohů vnitřního hitboxu
+        if (isSolid(left, top)) return true;
+        if (isSolid(right, top)) return true;
+        if (isSolid(left, bottom)) return true;
+        if (isSolid(right, bottom)) return true;
+
+        return false;
     }
 
     protected boolean isSolid(double px, double py) {
         Tile t = getTileAt(px, py);
-        return t != null && t.isSolid();
+        // Žebříky a Lana nejsou solidní pro účely kolize zdi/podlahy
+        if (t == null) return false;
+        return t.isSolid();
     }
 
     protected Tile getTileAt(double pixelX, double pixelY) {
@@ -167,7 +187,7 @@ public abstract class Entity implements IDrawable, IUpdatable, Serializable {
         return gameContext.getTileAtPixel(pixelX, pixelY);
     }
 
-    // Gettery pro AI
+    // Gettery pro GRID souřadnice (pro AI)
     public int getGridX() { return (int)((x + width/2) / GameController.TILE_SIZE); }
     public int getGridY() { return (int)((y + height/2) / GameController.TILE_SIZE); }
 

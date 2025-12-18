@@ -1,12 +1,10 @@
 package game;
 
 import javafx.scene.paint.Color;
-import java.util.List;
 
 public class Enemy extends Entity {
 
-    // Nepřítel je pomalejší než hráč (aby šel utéct)
-    private static final double ENEMY_SPEED = 1.5;
+    private static final double ENEMY_SPEED = 2.0;
 
     public Enemy(double x, double y, double size, GameController context) {
         super(x, y, size, size, Color.RED, context);
@@ -16,7 +14,7 @@ public class Enemy extends Entity {
     @Override
     public void update(long now) {
         thinkAI();
-        applyPhysics();
+        updatePhysics();
     }
 
     private void thinkAI() {
@@ -26,54 +24,58 @@ public class Enemy extends Entity {
         double centerX = x + width / 2;
         double centerY = y + height / 2;
         Tile currentTile = getTileAt(centerX, centerY);
+        Tile tileBelow = getTileAt(centerX, y + height + 2); // Co je pod nohama?
+
         boolean onLadder = (currentTile != null && currentTile.isLadder());
+        // Jsme na vrchu žebříku? (Stojíme na něčem, co je žebřík)
+        boolean aboveLadder = (tileBelow != null && tileBelow.isLadder());
 
         int myGridY = getGridY();
         int targetGridY = player.getGridY();
+        double targetX = player.getX();
 
+        // --- RESET POHYBU ---
         dx = 0;
-        // Dy resetujeme jen pokud lezeme, jinak necháme gravitaci z applyPhysics
+        // Na žebříku se automaticky nepohybujeme, gravitace je vypnutá, takže musíme dy nulovat
         if (onLadder) dy = 0;
 
-        // 1. Logika Žebříku
-        if (onLadder) {
-            // Pokud je hráč v jiném patře, použij žebřík
-            if (targetGridY < myGridY) {
-                dy = -moveSpeed;
-                // Vycentrování na žebřík
-                centerOnX(currentTile);
-                return;
-            } else if (targetGridY > myGridY) {
-                dy = moveSpeed;
-                centerOnX(currentTile);
-                return;
+
+        // --- 1. VERTIKÁLNÍ POHYB (AI) ---
+        boolean wantsToGoDown = targetGridY > myGridY;
+        boolean wantsToGoUp = targetGridY < myGridY;
+
+        if (onLadder || aboveLadder) {
+            // Musíme být vycentrovaní na X, abychom mohli slézt/vylézt
+            double ladderCenterX = (onLadder ? currentTile : tileBelow).getGridX() * GameController.TILE_SIZE;
+
+            if (Math.abs(x - ladderCenterX) > 4.0) {
+                // Nejsme vycentrovaní -> jdi do středu
+                if (x < ladderCenterX) dx = moveSpeed; else dx = -moveSpeed;
+            } else {
+                // Jsme vycentrovaní -> lez
+                if (wantsToGoUp && onLadder) {
+                    dy = -moveSpeed;
+                    return; // Priorita lezení
+                }
+                if (wantsToGoDown && (onLadder || aboveLadder)) {
+                    dy = moveSpeed;
+                    return; // Priorita lezení
+                }
             }
         }
 
-        // 2. Logika Pronásledování (Horizontální)
-        // Jdeme za hráčem, pokud jsme zhruba ve stejné výšce NEBO pokud hledáme žebřík
-        double targetX = player.getX();
+        // --- 2. HORIZONTÁLNÍ POHYB (AI) ---
+        // Pokud lezeme (dy != 0), nehýbeme se do stran
+        if (dy != 0) return;
 
-        // Jednoduchá hystereze, aby necukal, když je blízko
-        if (Math.abs(x - targetX) > 5) {
+        if (Math.abs(x - targetX) > 8.0) {
             if (x < targetX) dx = moveSpeed;
             else dx = -moveSpeed;
         }
-    }
 
-    private void centerOnX(Tile tile) {
-        double tileCenterX = tile.getGridX() * GameController.TILE_SIZE;
-        // Pokud jsme blízko středu, přitáhneme se
-        if (Math.abs(x - tileCenterX) > 2) {
-            if (x < tileCenterX) x += 1; // Jemný posun
-            else x -= 1;
+        // Zastavení před zdí
+        if (dx != 0 && checkCollision(x + dx * 5, y)) { // *5 pro predikci
+            dx = 0;
         }
-    }
-    public double getWidth(){
-        return this.width;
-    }
-
-    public double getHeight(){
-        return this.height;
     }
 }

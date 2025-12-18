@@ -4,9 +4,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 
 public class Player extends Entity {
-
-    // Konstantní rychlost pohybu
-    private static final double PLAYER_SPEED = 3.0;
+    private static final double PLAYER_SPEED = 3.5;
 
     public Player(double x, double y, double size, GameController context) {
         super(x, y, size, size, Color.BLUE, context);
@@ -15,9 +13,7 @@ public class Player extends Entity {
 
     @Override
     public void update(long now) {
-        // Zde už nepočítáme logiku pohybu, tu řeší handleKeyPressed
-        // Pouze aplikujeme fyziku a kontrolujeme zlato
-        applyPhysics();
+        updatePhysics();
         checkGoldCollection();
     }
 
@@ -31,11 +27,14 @@ public class Player extends Entity {
     }
 
     public void setHorizontalMovement(KeyCode code) {
-        // Zjistíme, jestli jsme na žebříku (pro pohyb nahoru/dolů)
+        // Kontrola, zda můžeme lézt
         double centerX = x + width / 2;
         double centerY = y + height / 2;
         Tile t = getTileAt(centerX, centerY);
+        Tile tBelow = getTileAt(centerX, y + height + 2);
+
         boolean canClimb = (t != null && t.isLadder());
+        boolean canDescend = (tBelow != null && tBelow.isLadder());
 
         switch (code) {
             case LEFT -> dx = -moveSpeed;
@@ -44,7 +43,8 @@ public class Player extends Entity {
                 if (canClimb) dy = -moveSpeed;
             }
             case DOWN -> {
-                if (canClimb) dy = moveSpeed;
+                // Můžeme jít dolů, pokud jsme na žebříku NEBO nad žebříkem
+                if (canClimb || canDescend) dy = moveSpeed;
             }
         }
     }
@@ -52,15 +52,7 @@ public class Player extends Entity {
     public void stopHorizontalMovement(KeyCode code) {
         switch (code) {
             case LEFT, RIGHT -> dx = 0;
-            case UP, DOWN -> dy = 0; // Zastavíme lezení, gravitace to převezme pokud nejsme na žebříku
+            case UP, DOWN -> dy = 0; // Okamžité zastavení lezení
         }
     }
-    public double getWidth(){
-        return this.width;
-    }
-
-    public double getHeight(){
-        return this.height;
-    }
 }
-
