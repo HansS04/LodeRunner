@@ -15,31 +15,71 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class LevelCompleteController {
-    @FXML private Label scoreLabel;
+    @FXML private Label titleLabel;
+    @FXML private Label scoreLabel; // Teď bude sloužit pro Čas
     @FXML private ListView<String> historyList;
-    @FXML private Button nextLevelBtn, menuBtn;
-    private int nextLevelIndex;
+    @FXML private Button actionBtn, menuBtn;
 
-    public void initializeData(int score, int currentLevel) {
-        DataManager.getInstance().addScoreRecord(currentLevel, score);
-        scoreLabel.setText("Score: " + score);
-        historyList.getItems().addAll(DataManager.getInstance().getHistory());
-        this.nextLevelIndex = currentLevel + 1;
-        if (nextLevelIndex >= MapData.getLevelCount()) nextLevelBtn.setDisable(true);
-        nextLevelBtn.setOnAction(e -> startLevel());
+    // Metoda pro zobrazení PŘED hrou (Lobby)
+    public void initPreGame(int levelIndex) {
+        titleLabel.setText("LEVEL " + (levelIndex + 1));
+
+        scoreLabel.setVisible(false);
+        scoreLabel.setManaged(false);
+
+        updateHistory(levelIndex);
+
+        actionBtn.setText("HRÁT LEVEL");
+        actionBtn.setOnAction(e -> startLevel(levelIndex));
         menuBtn.setOnAction(e -> goToMenu());
     }
 
-    private void startLevel() {
+    // Metoda pro zobrazení PO hře (Výsledky)
+    // ZMĚNA: Přijímáme 'time' (long) místo skóre
+    public void initPostGame(long timeInSeconds, int currentLevel) {
+        // Uložíme čas
+        DataManager.getInstance().addTimeRecord(currentLevel, timeInSeconds);
+
+        titleLabel.setText("LEVEL DOKONČEN!");
+        scoreLabel.setVisible(true);
+        scoreLabel.setManaged(true);
+        // Změna textu na Čas
+        scoreLabel.setText("Váš čas: " + timeInSeconds + "s");
+
+        // Aktualizujeme tabulku
+        updateHistory(currentLevel);
+
+        int nextLevelIndex = currentLevel + 1;
+        if (nextLevelIndex >= MapData.getLevelCount()) {
+            actionBtn.setText("DOHRÁNO (MENU)");
+            actionBtn.setOnAction(e -> goToMenu());
+        } else {
+            actionBtn.setText("DALŠÍ LEVEL");
+            actionBtn.setOnAction(e -> startLevel(nextLevelIndex));
+        }
+
+        menuBtn.setOnAction(e -> goToMenu());
+    }
+
+    private void updateHistory(int levelIndex) {
+        historyList.getItems().clear();
+        historyList.getItems().addAll(DataManager.getInstance().getTopTimesForLevel(levelIndex));
+    }
+
+    private void startLevel(int index) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/game.fxml"));
             Parent root = loader.load();
+
             GameController controller = loader.getController();
-            controller.startSpecificLevel(nextLevelIndex);
-            Stage stage = (Stage) nextLevelBtn.getScene().getWindow();
+            controller.startSpecificLevel(index);
+
+            Stage stage = (Stage) actionBtn.getScene().getWindow();
             Scene scene = new Scene(root, Config.WIDTH, Config.HEIGHT);
+
             scene.setOnKeyPressed(e -> controller.handleKeyPressed(e.getCode()));
             scene.setOnKeyReleased(e -> controller.handleKeyReleased(e.getCode()));
+
             stage.setScene(scene);
         } catch (IOException e) { e.printStackTrace(); }
     }

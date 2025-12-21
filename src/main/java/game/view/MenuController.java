@@ -1,8 +1,7 @@
 package game.view;
 
-import game.controller.GameController;
-import game.main.Config;
 import game.util.MapData;
+import game.main.Config;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -21,22 +20,26 @@ public class MenuController {
             final int idx = i;
             Button btn = new Button("Level " + (i + 1));
             btn.setPrefSize(100, 60);
-            btn.setOnAction(e -> startLevel(idx));
+
+            // Změna: Nejdeme rovnou do hry, ale do "Lobby" obrazovky
+            btn.setOnAction(e -> showLevelLobby(idx));
+
             levelGrid.add(btn, i % 5, i / 5);
         }
     }
 
-    private void startLevel(int index) {
+    private void showLevelLobby(int index) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/game.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/level_complete.fxml"));
             Parent root = loader.load();
-            GameController controller = loader.getController();
-            controller.startSpecificLevel(index);
+
+            // Získáme controller a řeknem mu, že jsme v režimu "Před hrou"
+            LevelCompleteController controller = loader.getController();
+            controller.initPreGame(index);
+
             Stage stage = (Stage) levelGrid.getScene().getWindow();
-            Scene scene = new Scene(root, Config.WIDTH, Config.HEIGHT);
-            scene.setOnKeyPressed(e -> controller.handleKeyPressed(e.getCode()));
-            scene.setOnKeyReleased(e -> controller.handleKeyReleased(e.getCode()));
-            stage.setScene(scene);
+            // Použijeme stejnou velikost okna jako má hra (Config.WIDTH/HEIGHT), aby to neblikalo
+            stage.setScene(new Scene(root, Config.WIDTH, Config.HEIGHT));
         } catch (IOException e) { e.printStackTrace(); }
     }
 }

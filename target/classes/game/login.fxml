@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="20.0"
+      style="-fx-background-color: #0d0d0d; -fx-padding: 50;"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="game.view.LoginController">
+
+    <Label text="LODE RUNNER" textFill="#00ff00">
+        <font>
+            <Font name="Courier New Bold" size="48.0" />
+        </font>
+    </Label>
+
+    <Label text="SECURE ACCESS TERMINAL" textFill="#555555">
+        <font>
+            <Font name="Courier New" size="18.0" />
+        </font>
+    </Label>
+
+    <VBox alignment="CENTER" spacing="10.0" maxWidth="300">
+        <Label text="ENTER IDENTIFICATION:" textFill="#00ff00" alignment="CENTER_LEFT" maxWidth="Infinity">
+            <font><Font name="Courier New" size="14.0" /></font>
+        </Label>
+
+        <TextField fx:id="usernameField" promptText="USER ID..."
+                   style="-fx-background-color: #1a1a1a; -fx-text-fill: #00ff00; -fx-border-color: #005500; -fx-prompt-text-fill: #333;">
+            <font><Font name="Courier New" size="16.0" /></font>
+        </TextField>
+    </VBox>
+
+    <Button fx:id="loginBtn" text="INITIATE CONNECTION"
+            style="-fx-background-color: #003300; -fx-text-fill: #00ff00; -fx-border-color: #00ff00; -fx-cursor: hand; -fx-padding: 10 20;">
+        <font>
+            <Font name="Courier New Bold" size="16.0" />
+        </font>
+    </Button>
+
+    <Label fx:id="statusLabel" text="WAITING FOR INPUT..." textFill="#444444">
+        <font>
+            <Font name="Courier New" size="12.0" />
+        </font>
+    </Label>
+
+</VBox>

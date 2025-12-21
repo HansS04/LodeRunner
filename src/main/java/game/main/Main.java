@@ -9,9 +9,11 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class Main extends Application {
+
     @Override
     public void start(Stage primaryStage) throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/menu.fxml"));
+        // Startujeme rovnou do Login obrazovky
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/login.fxml"));
         Parent root = loader.load();
 
         primaryStage.setTitle(Config.TITLE);

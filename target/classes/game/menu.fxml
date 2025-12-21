@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="30.0"
+      style="-fx-background-color: #1a1a1a; -fx-padding: 40;"
+      xmlns="http://javafx.com/javafx/19"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="game.view.MenuController">
+
+    <Label text="LODE RUNNER: REMASTERED" textFill="#00ff00">
+        <font> <Font name="Impact" size="48.0" /> </font>
+    </Label>
+
+    <Label text="Vyberte úroveň:" textFill="#aaaaaa">
+        <font> <Font size="18.0" /> </font>
+    </Label>
+
+    <GridPane fx:id="levelGrid" hgap="15" vgap="15" alignment="CENTER">
+    </GridPane>
+
+    <Label fx:id="infoLabel" text="" textFill="red"/>
+
+    <Label text="Ovládání: Šipky (Pohyb), R (Restart), ESC (Menu)" textFill="#555"/>
+
+</VBox>
