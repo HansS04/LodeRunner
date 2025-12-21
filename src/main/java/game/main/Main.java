@@ -1,4 +1,4 @@
-package game;
+package game.main;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -8,19 +8,15 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
-public class LodeRunnerDemo extends Application {
-
+public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws IOException {
-        DataManager.loadSettings();
-
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/menu.fxml"));
         Parent root = loader.load();
 
-        Scene scene = new Scene(root, 600, 400);
-
-        primaryStage.setTitle("Lode Runner - Menu");
-        primaryStage.setScene(scene);
+        primaryStage.setTitle(Config.TITLE);
+        primaryStage.setScene(new Scene(root, 600, 500));
+        primaryStage.setResizable(false);
         primaryStage.show();
     }
 
